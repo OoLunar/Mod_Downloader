@@ -8,13 +8,8 @@
         <IncludeNativeLibrariesInSingleFile>true</IncludeNativeLibrariesInSingleFile>
         <IncludeAllContentInSingleFile>true</IncludeAllContentInSingleFile>
         <DebugType>embedded</DebugType>
-        <SelfContained>true</SelfContained>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="ilmerge" Version="3.0.41" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.9" />
     </ItemGroup>
-    <Target Name="ILMerge">
-        <Exec Command="wine $(ILMergeConsolePath) /target:winexe '/out:out/windows/Mod Downloader.exe' 'bin/Release/net5.0/win-x64/publish/Mod Downloader.exe' bin/Release/net5.0/win-x64/publish/clrjit.dll bin/Release/net5.0/win-x64/publish/clrcompression.dll bin/Release/net5.0/win-x64/publish/coreclr.dll bin/Release/net5.0/win-x64/publish/mscordaccore.dll"/>
-    </Target>
 </Project>
