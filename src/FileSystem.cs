@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace Mod_Downloader {
     public class FileSystem {
         private static Logger _logger = new Logger("Filesystem");
+        public static string OldMods = Path.Join(Downloader.downloadTo, "old_mods");
+
         public static string GetDownloadPath() {
             string downloadPath = string.Empty;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
@@ -21,32 +24,36 @@ namespace Mod_Downloader {
                 Directory.CreateDirectory(downloadPath);
                 return downloadPath;
             } else {
-                _logger.Critical("No mods folder was found. Are you running this on Windows, Linux or OS X?");
+                _logger.Critical("No mods folder was found. Are you running this on Windows, Linux or Mac?");
                 Environment.Exit(1);
-                return string.Empty;
+                return null;
             }
         }
 
         public static void PrepareDownload() {
-            string downloadPath = GetDownloadPath();
-            string oldModsFolder = Path.Join(downloadPath, "old_mods");
-            string[] currentMods = Directory.GetFiles(downloadPath);
-            List<string> modList = new List<string>();
-            foreach (string mod in Downloader.downloadMods.Split('\n')) modList.Add(mod.Split() [0]);
+            string[] currentMods = Directory.GetFiles(Downloader.downloadTo);
+            List<string> hashList = new List<string>();
+            //Sort hash list alphabetically to be nice to the user.
+            Array.Sort(currentMods, (x, y) => String.Compare(x, y));
+            foreach (string mod in Downloader.downloadMods.Trim().Split('\n')) hashList.Add(mod.Split(' ') [2]);
+
             if (currentMods.Length != 0) {
-                Directory.CreateDirectory(oldModsFolder);
+                Directory.CreateDirectory(OldMods);
                 foreach (string file in currentMods) {
+                    if (string.IsNullOrEmpty(file)) break;
                     // Check to make sure the file isn't a directory and that it isn't already a mod.
-                    if (!File.GetAttributes(file).HasFlag(FileAttributes.Directory) && !modList.Contains(Path.GetFileNameWithoutExtension(file))) {
-                        File.Move(file, Path.Join(oldModsFolder, Path.GetFileName(file)), true);
-                        _logger.Debug($"Moved '{file}' to '{Path.Join(oldModsFolder, file)}'");
+                    if (Path.GetExtension(file) == ".jar" && !hashList.Contains(CalcHash(file))) {
+                        File.Move(file, Path.Join(OldMods, Path.GetFileName(file)), true);
+                        _logger.Debug($"Moved '{file}' to '{Path.Join(OldMods, file)}'");
                     }
                 }
                 return;
             } else {
-                _logger.Info($"No files found in {downloadPath}...");
+                _logger.Info($"Nothing to prepare in {Downloader.downloadTo}...");
                 return;
             }
         }
+
+        public static string CalcHash(string filePath) => BitConverter.ToString(MD5.Create().ComputeHash(File.OpenRead(filePath)));
     }
 }
